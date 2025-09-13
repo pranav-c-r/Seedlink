@@ -16,7 +16,7 @@ const Signin = ({ isSignUp = false }) => {
             if (docSnap.exists()) {
                 navigate('/home')
             }else{
-                navigate("/businessInfo");
+                navigate("/welcome");
             }
             }
         });
@@ -35,11 +35,11 @@ const Signin = ({ isSignUp = false }) => {
             addUser();
             const userDocRef = doc(database, "Users", auth.currentUser?.uid, "businessInfo", "data");
             const docSnap = await getDoc(userDocRef);
-
+            
             if (docSnap.exists()) {
                 navigate('/home')
             }else{
-                navigate("/businessInfo");
+                navigate("/welcome");
             }
         } catch (error) {
             console.error("Error signing in with Google:", error.message);

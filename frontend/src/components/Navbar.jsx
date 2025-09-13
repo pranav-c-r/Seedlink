@@ -1,14 +1,36 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { auth } from '../config/firebase';
-import { signOut } from 'firebase/auth';
+import { auth, database } from '../config/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isLoggedIn = auth.currentUser;
-  
-  // Don't show navbar on landing page
+  const [isVisible, setIsVisible] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(!!auth.currentUser);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setIsLoggedIn(!!user);
+      if (user) {
+        const userDocRef = doc(database, "Users", user.uid, "businessInfo", "data");
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists()) {
+          const docData = docSnap.data();
+          if (docData && docData.isBusiness === true) {
+            setIsVisible(true);
+          } else {
+            setIsVisible(false);
+          }
+        } else {
+          setIsVisible(false);
+        }
+      } else {
+        setIsVisible(false);
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate]);
   if (location.pathname === '/') {
     return null;
   }
@@ -32,14 +54,19 @@ const Navbar = () => {
         <div className="flex gap-6 items-center">
           {isLoggedIn ? (
             <>
-              <Link to="/home" className="text-white hover:text-gold-light font-medium relative after:absolute after:w-0 after:h-0.5 after:bg-gold-primary after:bottom-[-4px] after:left-0 hover:after:w-full after:transition-all">
-                Dashboard
-              </Link>
-              <Link to="/shops" className="text-white hover:text-gold-light font-medium relative after:absolute after:w-0 after:h-0.5 after:bg-gold-primary after:bottom-[-4px] after:left-0 hover:after:w-full after:transition-all">
-                Discover Shops
+              {isVisible && (
+                <Link to="/dashboard" className="text-white hover:text-gold-light font-medium relative after:absolute after:w-0 after:h-0.5 after:bg-gold-primary after:bottom-[-4px] after:left-0 hover:after:w-full after:transition-all">
+                  Add Updates
+                </Link>
+              )}
+              <Link to="/explore" className="text-white hover:text-gold-light font-medium relative after:absolute after:w-0 after:h-0.5 after:bg-gold-primary after:bottom-[-4px] after:left-0 hover:after:w-full after:transition-all">
+                View updates
               </Link>
               <Link to="/ar-view" className="text-white hover:text-gold-light font-medium relative after:absolute after:w-0 after:h-0.5 after:bg-gold-primary after:bottom-[-4px] after:left-0 hover:after:w-full after:transition-all">
                 AR View
+              </Link>
+              <Link to="/profile" className="text-white hover:text-gold-light font-medium relative after:absolute after:w-0 after:h-0.5 after:bg-gold-primary after:bottom-[-4px] after:left-0 hover:after:w-full after:transition-all">
+                Profile
               </Link>
               <button onClick={handleLogout} className="bg-teal text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-all hover:-translate-y-0.5">
                 Logout

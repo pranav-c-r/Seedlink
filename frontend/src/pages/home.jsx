@@ -1,135 +1,170 @@
-import { signOut } from 'firebase/auth';
-import React, { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom';
-import { auth, database } from '../config/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { auth, database } from '../config/firebase.js';
+import Lottie from 'lottie-react';
+import moneyAnimation from '../../utils/money.json';
 
 const Home = () => {
-    const navigate = useNavigate()
-    const [username, setUserName]=useState('')
-    const [email, setEmail]=useState('')
-    useEffect(() => {
-        const fetchUserData = async () => {
-          const currentUser = auth.currentUser;
-    
-          if (currentUser) {
-            const userRef = doc(database, "Users", currentUser.uid);
-            const userSnap = await getDoc(userRef);
-            if (userSnap.exists()) {
-              const userData = userSnap.data();
-              setUserName(userData.username || 'No Username');
-              setEmail(userData.email || 'No email found');
-            } else {
-              navigate("/signin");
-            }
-          } else {
-            navigate("/signin");
+  const navigate = useNavigate();
+  const [allShops, setAllShops] = useState([]);
+  const [filteredShops, setFilteredShops] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [isNearMe, setIsNearMe] = useState(false);
+  const [userPincode, setUserPincode] = useState('');
+
+  const categories = ['All', 'Local Retail Store', 'Online E-commerce Store', 'Service Business', 'Artisan/Craftsman', 'Restaurant/Food Business', 'Other'];
+
+  useEffect(() => {
+    const fetchShopsAndUser = async () => {
+      setLoading(true);
+      try {
+        if (auth.currentUser) {
+          const userDocRef = doc(database, 'Users', auth.currentUser.uid, 'businessInfo', 'data');
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            setUserPincode(userDocSnap.data().pincode || '');
           }
-        };
-    
-        fetchUserData();
-      }, [navigate]);
-    const logout = async () => {
-        try {
-            await signOut(auth);
-            navigate("/");
-        } catch (error) {
-            console.error("Error signing out:", error);
         }
+
+        const usersRef = collection(database, 'Users');
+        const q = query(usersRef);
+        const querySnapshot = await getDocs(q);
+
+        const fetchedShops = [];
+        for (const userDoc of querySnapshot.docs) {
+          const businessInfoRef = doc(database, 'Users', userDoc.id, 'businessInfo', 'data');
+          const businessInfoSnap = await getDoc(businessInfoRef);
+          if (businessInfoSnap.exists() && businessInfoSnap.data().isBusiness === true) {
+            fetchedShops.push({ id: userDoc.id, ...businessInfoSnap.data() });
+          }
+        }
+        setAllShops(fetchedShops);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchShopsAndUser();
+  }, []);
+
+  useEffect(() => {
+    let tempShops = allShops;
+
+    if (searchTerm) {
+      tempShops = tempShops.filter(shop =>
+        shop.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (shop.BusinessInfo && shop.BusinessInfo.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    if (selectedCategory !== 'All') {
+      tempShops = tempShops.filter(shop => shop.BusinessInfo === selectedCategory);
+    }
+
+    if (isNearMe && userPincode) {
+      tempShops = tempShops.filter(shop => shop.pincode === userPincode);
+    }
+
+    setFilteredShops(tempShops);
+  }, [allShops, searchTerm, selectedCategory, isNearMe, userPincode]);
+
+  const handleShopClick = (shopId) => {
+    navigate(`/shop/${shopId}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-6 flex items-center justify-center">
+        <div className="text-xl">Loading businesses...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Dashboard Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Welcome, {username}</h1>
-        <p className="text-gray-400">Manage your Seedlink AI experience</p>
-      </div>
-      
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-black/30 p-6 rounded-xl border border-gold-primary/30">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-white">Shops</h3>
-            <span className="text-gold-primary text-2xl font-bold">0</span>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-gray-800/50 p-6 md:p-8 rounded-xl border border-gold-primary/20 mb-8 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 items-center">
+          <div className="space-y-4">
+            <h1 className="text-3xl sm:text-4xl font-extrabold leading-tight">
+              Discover Local <span className="text-gold-primary">Businesses</span>
+            </h1>
+            <p className="text-sm sm:text-base opacity-80">
+              Explore shops, find updates, and support your local community.
+            </p>
           </div>
-          <p className="text-gray-400 text-sm">Create your first shop to get started</p>
-        </div>
-        
-        <div className="bg-black/30 p-6 rounded-xl border border-gold-primary/30">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-white">Products</h3>
-            <span className="text-gold-primary text-2xl font-bold">0</span>
+          <div className="flex justify-center md:justify-end w-full">
+            <div className="w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80">
+              <Lottie animationData={moneyAnimation} loop={true} />
+            </div>
           </div>
-          <p className="text-gray-400 text-sm">Add products to your catalog</p>
         </div>
-        
-        <div className="bg-black/30 p-6 rounded-xl border border-gold-primary/30">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-white">AR Views</h3>
-            <span className="text-gold-primary text-2xl font-bold">0</span>
-          </div>
-          <p className="text-gray-400 text-sm">Track customer AR interactions</p>
-        </div>
-      </div>
-      
-      {/* Quick Actions */}
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-white mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link to="/create-shop" className="bg-black/20 hover:bg-black/40 p-4 rounded-lg border border-gray-700 flex flex-col items-center justify-center transition-all">
-            <div className="w-12 h-12 bg-gold-primary/20 rounded-full flex items-center justify-center mb-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gold-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
+
+        <div className="mb-8">
+          <div className="bg-gray-800/50 p-6 rounded-xl">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div>
+                <input
+                  type="text"
+                  placeholder="Search shops..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-gold-primary placeholder-gray-400"
+                />
+              </div>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-gold-primary"
+              >
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="near-me"
+                  checked={isNearMe}
+                  onChange={(e) => setIsNearMe(e.target.checked)}
+                  className="form-checkbox h-5 w-5 text-gold-primary bg-gray-700 border-gray-600 rounded"
+                />
+                <label htmlFor="near-me" className="text-gray-300">Show nearest to me</label>
+              </div>
             </div>
-            <span className="text-white font-medium">Create Shop</span>
-          </Link>
-          
-          <Link to="/add-product" className="bg-black/20 hover:bg-black/40 p-4 rounded-lg border border-gray-700 flex flex-col items-center justify-center transition-all">
-            <div className="w-12 h-12 bg-gold-primary/20 rounded-full flex items-center justify-center mb-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gold-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredShops.length > 0 ? (
+                filteredShops.map(shop => (
+                  <div 
+                    key={shop.id}
+                    className="bg-gray-800/30 rounded-xl border border-gray-700 hover:border-gold-primary/30 transition-all p-4 cursor-pointer"
+                    onClick={() => handleShopClick(shop.id)}
+                  >
+                    <div className="h-40 bg-gray-700 rounded-lg mb-4 flex items-center justify-center">
+                      <span className="text-gray-400">Shop Image</span>
+                    </div>
+                    <h3 className="font-bold text-lg mb-2">{shop.businessName}</h3>
+                    <p className="text-gold-primary mb-2">{shop.BusinessInfo}</p>
+                    {shop.city && shop.state && (
+                      <p className="text-gray-400 text-sm mb-3">📍 {shop.city}, {shop.state}</p>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <p className="text-gray-400">No shops found matching your criteria</p>
+                </div>
+              )}
             </div>
-            <span className="text-white font-medium">Add Product</span>
-          </Link>
-          
-          <Link to="/ar-setup" className="bg-black/20 hover:bg-black/40 p-4 rounded-lg border border-gray-700 flex flex-col items-center justify-center transition-all">
-            <div className="w-12 h-12 bg-gold-primary/20 rounded-full flex items-center justify-center mb-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gold-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <span className="text-white font-medium">Setup AR View</span>
-          </Link>
-          <Link to="/catalogue" className="bg-black/20 hover:bg-black/40 p-4 rounded-lg border border-gray-700 flex flex-col items-center justify-center transition-all">
-            <div className="w-12 h-12 bg-gold-primary/20 rounded-full flex items-center justify-center mb-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gold-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <span className="text-white font-medium">Catalogue generation</span>
-          </Link>
-          
-        </div>
-      </div>
-      
-      {/* User Profile */}
-      <div className="bg-black/30 p-6 rounded-xl border border-gold-primary/30">
-        <h2 className="text-xl font-bold text-white mb-4">Your Profile</h2>
-        <div className="flex flex-col md:flex-row md:items-center gap-6">
-          <div className="w-20 h-20 bg-gold-primary/20 rounded-full flex items-center justify-center text-gold-primary text-2xl font-bold">
-            {username.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <h3 className="text-lg font-medium text-white">{username}</h3>
-            <p className="text-gray-400">{email}</p>
-            <button className="mt-3 text-sm text-gold-primary hover:text-gold-light">Edit Profile</button>
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;
