@@ -14,6 +14,7 @@ import GeneralUsersInfo from './pages/onboarding/generalUsersInfo';
 import PostDetails from './pages/PostDetails';
 import Profile from './pages/profile';
 import ShopDetails from './pages/shopDetails';
+import Shop3D from './pages/shop-3d';
 function App() {
   return (
     <div className="min-h-screen bg-bg-primary w-full overflow-x-hidden">
@@ -31,6 +32,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/generalUsersInfo" element={<GeneralUsersInfo />} />
           <Route path="/catalogue" element={<CatalogueGenerator />} />
+          <Route path="/shop-3d" element={<Shop3D />} />
           <Route path="/shopkeeper-dashboard" element={<ShopkeeperDashboard />} />
           <Route path="/post/:postId" element={<PostDetails />} />
           <Route path="/shop/:shopId" element={<ShopDetails />} />
