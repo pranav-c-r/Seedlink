@@ -77,7 +77,12 @@ const ShopDetails = () => {
       navigate(`/post/${update.uniqueId}`, { state: { post: update } });
     };
     const handleView3DClick = () => {
-        navigate('/shop', { state: { arImages: shop.arImages, shopName: shop.businessName } });
+        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+            navigate('/shop-3d', { state: { arImages: shop.arImages, shopName: shop.businessName, isAR: true } });
+        } else {
+            navigate('/shop-3d', { state: { arImages: shop.arImages, shopName: shop.businessName, isAR: false } });
+        }
     };
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-6">
@@ -114,7 +119,7 @@ const ShopDetails = () => {
                             onClick={handleView3DClick}
                             className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors"
                         >
-                            View Shop in 3D
+                            View Shop in 3D / AR
                         </button>
                     </div>
                     <div className="bg-gray-800/50 p-6 rounded-xl border border-gold-primary/20 flex flex-col items-center justify-center">
