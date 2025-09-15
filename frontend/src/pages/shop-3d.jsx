@@ -3,97 +3,19 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Canvas, useFrame, useThree, useLoader } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
-import 'aframe'
+import '@google/model-viewer'
 
-const MobileAR = ({ arImages, shopName }) => {
-  const navigate = useNavigate()
-  const [arScene, setArScene] = useState(null)
-
-  useEffect(() => {
-    if (!arImages || arImages.length < 4) {
-      navigate(-1)
-      return
-    }
-
-    const scene = document.createElement('a-scene')
-    scene.setAttribute('arjs', 'sourceType: webcam; detectionMode: mono; patternRatio: 0.5;')
-    scene.setAttribute('embedded', 'true')
-    scene.setAttribute('vr-mode-ui', 'enabled: false')
-    setArScene(scene)
-
-    const camera = document.createElement('a-camera')
-    camera.setAttribute('gps-new-camera', 'minAccuracy: 50')
-    scene.appendChild(camera)
-
-    const shopEntity = document.createElement('a-entity')
-    shopEntity.setAttribute('gps-new-entity-place', { latitude: 0, longitude: 0 })
-    shopEntity.setAttribute('scale', '2 2 2')
-    shopEntity.setAttribute('position', '0 0 -5')
-    shopEntity.setAttribute('rotation', '0 45 0')
-
-    const frontWall = document.createElement('a-plane')
-    frontWall.setAttribute('position', '0 0 2')
-    frontWall.setAttribute('rotation', '0 180 0')
-    frontWall.setAttribute('height', '4')
-    frontWall.setAttribute('width', '4')
-    frontWall.setAttribute('src', arImages[1])
-    frontWall.setAttribute('material', 'side: double')
-    shopEntity.appendChild(frontWall)
-
-    const backWall = document.createElement('a-plane')
-    backWall.setAttribute('position', '0 0 -2')
-    backWall.setAttribute('height', '4')
-    backWall.setAttribute('width', '4')
-    backWall.setAttribute('src', arImages[0])
-    backWall.setAttribute('material', 'side: double')
-    shopEntity.appendChild(backWall)
-
-    const leftWall = document.createElement('a-plane')
-    leftWall.setAttribute('position', '-2 0 0')
-    leftWall.setAttribute('rotation', '0 90 0')
-    leftWall.setAttribute('height', '4')
-    leftWall.setAttribute('width', '4')
-    leftWall.setAttribute('src', arImages[2])
-    leftWall.setAttribute('material', 'side: double')
-    shopEntity.appendChild(leftWall)
-
-    const rightWall = document.createElement('a-plane')
-    rightWall.setAttribute('position', '2 0 0')
-    rightWall.setAttribute('rotation', '0 -90 0')
-    rightWall.setAttribute('height', '4')
-    rightWall.setAttribute('width', '4')
-    rightWall.setAttribute('src', arImages[3])
-    rightWall.setAttribute('material', 'side: double')
-    shopEntity.appendChild(rightWall)
-
-    const floor = document.createElement('a-plane')
-    floor.setAttribute('position', '0 -2 0')
-    floor.setAttribute('rotation', '-90 0 0')
-    floor.setAttribute('height', '4')
-    floor.setAttribute('width', '4')
-    floor.setAttribute('color', '#333333')
-    shopEntity.appendChild(floor)
-
-    const ceiling = document.createElement('a-plane')
-    ceiling.setAttribute('position', '0 2 0')
-    ceiling.setAttribute('rotation', '90 0 0')
-    ceiling.setAttribute('height', '4')
-    ceiling.setAttribute('width', '4')
-    ceiling.setAttribute('color', '#333333')
-    shopEntity.appendChild(ceiling)
-
-    scene.appendChild(shopEntity)
-    document.body.appendChild(scene)
-
-    return () => {
-      if (arScene) {
-        arScene.parentNode.removeChild(arScene)
-      }
-    }
-  }, [arImages])
-
+const MobileAR = ({ shopName }) => {
   return (
-    <div className="fixed top-0 left-0 w-full h-full z-0">
+    <div className="w-screen h-screen">
+      <model-viewer
+        src="/models/shop.glb"
+        ar
+        ar-modes="scene-viewer quick-look webxr"
+        camera-controls
+        autoplay
+        style={{ width: '100%', height: '100%' }}
+      ></model-viewer>
       <div className="absolute top-4 right-4 z-10 text-white bg-gray-800/50 p-2 rounded-lg">
         <h1 className="font-bold text-lg">{shopName || 'AR View'}</h1>
       </div>
@@ -209,7 +131,7 @@ export default function Shop3D() {
         <h1 className="font-bold text-lg">{shopName || (isMobile ? 'AR View' : '3D View')}</h1>
       </div>
       {isMobile ? (
-        <MobileAR arImages={arImages} shopName={shopName} />
+        <MobileAR shopName={shopName} />
       ) : (
         <Canvas camera={{ position: [0, 0, 2], fov: 75 }} className="w-screen h-screen">
           <ambientLight intensity={0.5} />
