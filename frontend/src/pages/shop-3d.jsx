@@ -4,88 +4,92 @@ import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import 'aframe';
-import 'aframe-ar';
 
 const MobileAR = ({ arImages, shopName }) => {
+    const navigate = useNavigate();
     const [arScene, setArScene] = useState(null);
 
     useEffect(() => {
-        if (arImages && arImages.length >= 4) {
-            const scene = document.createElement('a-scene');
-            scene.setAttribute('arjs', 'sourceType: webcam; detectionMode: mono;');
-            scene.setAttribute('embedded', 'true');
-            scene.setAttribute('camera', 'active: true');
-            scene.setAttribute('vr-mode-ui', 'enabled: false');
-            setArScene(scene);
-
-            const shop = document.createElement('a-entity');
-            shop.setAttribute('position', '0 0 -5');
-            shop.setAttribute('rotation', '0 45 0');
-            shop.setAttribute('scale', '0.5 0.5 0.5');
-
-            const textures = arImages.map(url => new THREE.TextureLoader().load(url));
-
-            const material_front = `src: url(${arImages[1]}); side: double;`;
-            const material_back = `src: url(${arImages[0]}); side: double;`;
-            const material_left = `src: url(${arImages[2]}); side: double;`;
-            const material_right = `src: url(${arImages[3]}); side: double;`;
-
-            const frontWall = document.createElement('a-plane');
-            frontWall.setAttribute('position', '0 0 2');
-            frontWall.setAttribute('rotation', '0 180 0');
-            frontWall.setAttribute('height', '4');
-            frontWall.setAttribute('width', '4');
-            frontWall.setAttribute('material', material_front);
-            shop.appendChild(frontWall);
-
-            const backWall = document.createElement('a-plane');
-            backWall.setAttribute('position', '0 0 -2');
-            backWall.setAttribute('height', '4');
-            backWall.setAttribute('width', '4');
-            backWall.setAttribute('material', material_back);
-            shop.appendChild(backWall);
-
-            const leftWall = document.createElement('a-plane');
-            leftWall.setAttribute('position', '-2 0 0');
-            leftWall.setAttribute('rotation', '0 90 0');
-            leftWall.setAttribute('height', '4');
-            leftWall.setAttribute('width', '4');
-            leftWall.setAttribute('material', material_left);
-            shop.appendChild(leftWall);
-
-            const rightWall = document.createElement('a-plane');
-            rightWall.setAttribute('position', '2 0 0');
-            rightWall.setAttribute('rotation', '0 -90 0');
-            rightWall.setAttribute('height', '4');
-            rightWall.setAttribute('width', '4');
-            rightWall.setAttribute('material', material_right);
-            shop.appendChild(rightWall);
-            
-            const floor = document.createElement('a-plane');
-            floor.setAttribute('position', '0 -2 0');
-            floor.setAttribute('rotation', '-90 0 0');
-            floor.setAttribute('height', '4');
-            floor.setAttribute('width', '4');
-            floor.setAttribute('material', 'color: #333333;');
-            shop.appendChild(floor);
-
-            const ceiling = document.createElement('a-plane');
-            ceiling.setAttribute('position', '0 2 0');
-            ceiling.setAttribute('rotation', '90 0 0');
-            ceiling.setAttribute('height', '4');
-            ceiling.setAttribute('width', '4');
-            ceiling.setAttribute('material', 'color: #333333;');
-            shop.appendChild(ceiling);
-            
-            scene.appendChild(shop);
-            document.body.appendChild(scene);
-
-            return () => {
-                if (arScene) {
-                    arScene.parentNode.removeChild(arScene);
-                }
-            };
+        if (!arImages || arImages.length < 4) {
+             navigate(-1);
+             return;
         }
+        
+        const scene = document.createElement('a-scene');
+        scene.setAttribute('arjs', 'sourceType: webcam; detectionMode: mono; patternRatio: 0.5;');
+        scene.setAttribute('embedded', 'true');
+        scene.setAttribute('vr-mode-ui', 'enabled: false');
+        setArScene(scene);
+        
+        const camera = document.createElement('a-camera');
+        camera.setAttribute('gps-new-camera', 'minAccuracy: 50');
+        scene.appendChild(camera);
+
+        const shopEntity = document.createElement('a-entity');
+        shopEntity.setAttribute('gps-new-entity-place', { latitude: 0, longitude: 0 });
+        shopEntity.setAttribute('scale', '2 2 2');
+        shopEntity.setAttribute('position', '0 0 -5');
+        shopEntity.setAttribute('rotation', '0 45 0');
+        
+        const frontWall = document.createElement('a-plane');
+        frontWall.setAttribute('position', '0 0 2');
+        frontWall.setAttribute('rotation', '0 180 0');
+        frontWall.setAttribute('height', '4');
+        frontWall.setAttribute('width', '4');
+        frontWall.setAttribute('src', arImages[1]);
+        frontWall.setAttribute('material', 'side: double');
+        shopEntity.appendChild(frontWall);
+
+        const backWall = document.createElement('a-plane');
+        backWall.setAttribute('position', '0 0 -2');
+        backWall.setAttribute('height', '4');
+        backWall.setAttribute('width', '4');
+        backWall.setAttribute('src', arImages[0]);
+        backWall.setAttribute('material', 'side: double');
+        shopEntity.appendChild(backWall);
+
+        const leftWall = document.createElement('a-plane');
+        leftWall.setAttribute('position', '-2 0 0');
+        leftWall.setAttribute('rotation', '0 90 0');
+        leftWall.setAttribute('height', '4');
+        leftWall.setAttribute('width', '4');
+        leftWall.setAttribute('src', arImages[2]);
+        leftWall.setAttribute('material', 'side: double');
+        shopEntity.appendChild(leftWall);
+
+        const rightWall = document.createElement('a-plane');
+        rightWall.setAttribute('position', '2 0 0');
+        rightWall.setAttribute('rotation', '0 -90 0');
+        rightWall.setAttribute('height', '4');
+        rightWall.setAttribute('width', '4');
+        rightWall.setAttribute('src', arImages[3]);
+        rightWall.setAttribute('material', 'side: double');
+        shopEntity.appendChild(rightWall);
+        
+        const floor = document.createElement('a-plane');
+        floor.setAttribute('position', '0 -2 0');
+        floor.setAttribute('rotation', '-90 0 0');
+        floor.setAttribute('height', '4');
+        floor.setAttribute('width', '4');
+        floor.setAttribute('color', '#333333');
+        shopEntity.appendChild(floor);
+
+        const ceiling = document.createElement('a-plane');
+        ceiling.setAttribute('position', '0 2 0');
+        ceiling.setAttribute('rotation', '90 0 0');
+        ceiling.setAttribute('height', '4');
+        ceiling.setAttribute('width', '4');
+        ceiling.setAttribute('color', '#333333');
+        shopEntity.appendChild(ceiling);
+        
+        scene.appendChild(shopEntity);
+        document.body.appendChild(scene);
+
+        return () => {
+            if (arScene) {
+                arScene.parentNode.removeChild(arScene);
+            }
+        };
     }, [arImages]);
 
     return (
@@ -141,8 +145,7 @@ function Controls() {
   return null;
 }
 
-function Wall({ url, position, rotation }) {
-  const texture = useLoader(THREE.TextureLoader, url);
+function Wall({ texture, position, rotation }) {
   return (
     <mesh position={position} rotation={rotation}>
       <planeGeometry args={[4, 4]} />
@@ -152,15 +155,13 @@ function Wall({ url, position, rotation }) {
 }
 
 function Room({ arImages }) {
-  const textureLoader = new THREE.TextureLoader();
-  const textures = arImages.map(url => textureLoader.load(url));
-  
+  const textures = useLoader(THREE.TextureLoader, arImages);
   return (
     <>
-      <Wall url={arImages[0]} position={[0, 0, -2]} rotation={[0, 0, 0]} />
-      <Wall url={arImages[1]} position={[0, 0, 2]} rotation={[0, Math.PI, 0]} />
-      <Wall url={arImages[2]} position={[-2, 0, 0]} rotation={[0, Math.PI / 2, 0]} />
-      <Wall url={arImages[3]} position={[2, 0, 0]} rotation={[0, -Math.PI / 2, 0]} />
+      <Wall texture={textures[0]} position={[0, 0, -2]} rotation={[0, 0, 0]} />
+      <Wall texture={textures[1]} position={[0, 0, 2]} rotation={[0, Math.PI, 0]} />
+      <Wall texture={textures[2]} position={[-2, 0, 0]} rotation={[0, Math.PI / 2, 0]} />
+      <Wall texture={textures[3]} position={[2, 0, 0]} rotation={[0, -Math.PI / 2, 0]} />
       <mesh position={[0, 2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[4, 4]} />
         <meshStandardMaterial color={0x333333} />
