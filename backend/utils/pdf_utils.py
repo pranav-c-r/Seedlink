@@ -2,10 +2,14 @@ from jinja2 import Environment, FileSystemLoader
 import pdfkit
 import os
 import uuid
+import platform
 from config import TEMPLATE_DIR, BASE_DIR
 
-# Point to your wkhtmltopdf binary (update this path if installed elsewhere)
-WKHTMLTOPDF_PATH = r"D:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+# Detect wkhtmltopdf path based on environment
+if platform.system() == "Windows":
+    WKHTMLTOPDF_PATH = r"D:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+else:
+    WKHTMLTOPDF_PATH = "/usr/bin/wkhtmltopdf"
 
 # Configure pdfkit with wkhtmltopdf executable
 config = pdfkit.configuration(wkhtmltopdf=WKHTMLTOPDF_PATH)
@@ -46,10 +50,7 @@ def generate_pdf(shop_name, location, products, primary_color="#000000",
     }
 
     try:
-        # Generate PDF
         pdfkit.from_string(html_content, pdf_path, options=options, configuration=config)
-        # Return only the file path (FastAPI endpoint will handle FileResponse)
         return pdf_path
     except Exception as e:
-        # Raise error so FastAPI can catch and send HTTP 500
         raise RuntimeError(f"PDF generation failed: {str(e)}")
